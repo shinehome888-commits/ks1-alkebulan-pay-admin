@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>KS1 ALKEBULAN PAY – Admin Login</title>
+  <style>
+    :root { --deep-blue: #002147; --gold: #D4AF37; }
+    * { margin:0; padding:0; box-sizing:border-box; font-family:Segoe UI, sans-serif; }
+    body { background: var(--deep-blue); color:white; padding:20px; min-height:100vh; display:flex; justify-content:center; align-items:center; }
+    .container { background:rgba(255,255,255,0.08); border-radius:16px; padding:32px; width:100%; max-width:400px; text-align:center; }
+    h1 { color: var(--gold); margin-bottom:24px; }
+    input { width:100%; padding:12px; margin:10px 0; border-radius:8px; border:1px solid #ddd; font-size:16px; }
+    .btn { background: var(--gold); color: var(--deep-blue); border:none; border-radius:8px; padding:14px; width:100%; font-weight:bold; font-size:16px; cursor:pointer; margin:16px 0; }
+    footer { margin-top:30px; font-size:12px; color:#bbb; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>KS1 ALKEBULAN PAY</h1>
+    <p>Admin Access • KS1EGF</p>
+    <input type="text" id="tradeId" placeholder="Admin Trade ID" value="KS1-ADMN" readonly />
+    <input type="password" id="password" placeholder="Password" />
+    <button class="btn" onclick="login()">Login</button>
+    <footer>
+      <p>© 2026 KS1 ALKEBULAN PAY – A Nonprofit Project By KS1 Empire Group & Foundation (KS1EGF)</p>
+    </footer>
+  </div>
+  <script>
+    const API_BASE = 'https://ks1-alkebulan-pay-backend.onrender.com';
+    async function login() {
+      const password = document.getElementById('password').value;
+      try {
+        const res = await fetch(`${API_BASE}/admin/login`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ tradeId: 'KS1-ADMN', password })
+        });
+        const result = await res.json();
+        if (res.ok && result.token) {
+          localStorage.setItem('ks1_admin_token', result.token);
+          window.location.href = 'dashboard.html';
+        } else {
+          alert(result.message || 'Login failed');
+        }
+      } catch (err) {
+        alert('Network error. Please try again.');
+      }
+    }
+  </script>
+</body>
+</html>
