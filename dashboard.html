@@ -1,132 +1,74 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>KS1 ALKEBULAN PAY – Admin Dashboard</title>
-  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap">
   <style>
-    :root { --deep-blue: #002147; --gold: #D4AF37; --card-bg: rgba(255, 255, 255, 0.08); }
-    * { margin:0; padding:0; box-sizing:border-box; font-family:'Inter', sans-serif; }
-    body { background:var(--deep-blue); color:white; min-height:100vh; padding:20px; }
-    .container { max-width:1200px; margin:0 auto; }
-    header { display:flex; justify-content:space-between; align-items:center; margin-bottom:32px; padding-bottom:16px; border-bottom:1px solid rgba(255,255,255,0.1); }
-    h1 { font-size:32px; font-weight:700; background:linear-gradient(to right, #fff, var(--gold)); -webkit-background-clip:text; -webkit-text-fill-color:transparent; }
-    .controls { display:flex; gap:12px; flex-wrap:wrap; }
-    .btn { padding:12px 24px; border-radius:12px; font-weight:600; cursor:pointer; border:none; font-size:16px; display:flex; align-items:center; gap:8px; }
-    .btn-primary { background:white; color:var(--deep-blue); }
-    .btn-gold { background:var(--gold); color:var(--deep-blue); }
-    .stats { display:grid; grid-template-columns:repeat(auto-fit, minmax(240px,1fr)); gap:20px; margin-bottom:32px; }
-    .stat-card { background:var(--card-bg); border-radius:16px; padding:20px; text-align:center; border:1px solid rgba(255,255,255,0.1); }
-    .stat-value { font-size:32px; font-weight:700; margin:8px 0; color:var(--gold); }
-    .users-section { background:var(--card-bg); border-radius:16px; overflow:hidden; border:1px solid rgba(255,255,255,0.1); }
-    table { width:100%; border-collapse:collapse; }
-    th, td { padding:16px 20px; text-align:left; border-bottom:1px solid rgba(255,255,255,0.05); }
-    th { color:var(--gold); font-weight:600; font-size:14px; text-transform:uppercase; }
-    .hidden { display:none; }
-    footer { margin-top:40px; text-align:center; font-size:12px; color:#bbb; padding-top:20px; border-top:1px solid rgba(255,255,255,0.05); }
+    body { background: #050A16; color: white; font-family: sans-serif; padding: 20px; }
+    .container { max-width: 800px; margin: 0 auto; }
+    .card { background: rgba(255,255,255,0.05); padding: 20px; border-radius: 10px; margin: 10px 0; }
+    .btn { background: #D4AF37; color: #000; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer; }
+    .logout { background: #ff4d4d; }
+    h1 { color: #D4AF37; margin-bottom: 20px; }
   </style>
 </head>
 <body>
   <div class="container">
-    <header>
-      <h1>KS1 ALKEBULAN PAY ADMIN</h1>
-      <div class="controls">
-        <button class="btn btn-primary" onclick="toggleUsers()">👁️ Manage Users</button>
-        <button class="btn btn-gold" onclick="refreshData()">🔄 Refresh</button>
-        <button class="btn btn-gold" onclick="logout()">🔐 Logout</button>
-      </div>
-    </header>
-
-    <div class="stats">
-      <div class="stat-card"><div>Total Businesses</div><div class="stat-value" id="totalBusinesses">—</div></div>
-      <div class="stat-card"><div>Eligible for Support</div><div class="stat-value" id="eligibleCount">—</div></div>
-      <div class="stat-card"><div>Avg Reputation</div><div class="stat-value" id="avgReputation">—</div></div>
+    <h1>KS1 Admin Dashboard</h1>
+    <div id="admin-info" class="card">Loading...</div>
+    
+    <div class="card">
+      <h3>Admin Actions</h3>
+      <button class="btn" onclick="viewUsers()">View All Users</button>
+      <button class="btn" onclick="viewTrades()">Monitor Trades</button>
+      <button class="btn" onclick="viewAnalytics()">System Analytics</button>
     </div>
 
-    <div id="usersSection" class="users-section hidden">
-      <div style="padding:20px;"><h2>Registered Businesses</h2></div>
-      <table>
-        <thead>
-          <tr>
-            <th>Trade ID</th>
-            <th>Business Owner</th>
-            <th>Contact</th>
-            <th>Type</th>
-            <th>Reputation</th>
-            <th>Status</th>
-          </tr>
-        </thead>
-        <tbody id="usersBody"></tbody>
-      </table>
-    </div>
-
-    <footer>
-      <p>© 2026 KS1 ALKEBULAN PAY – A Nonprofit Project By KS1 Empire Group & Foundation (KS1EGF)</p>
-    </footer>
+    <button class="btn logout" onclick="logout()">Logout</button>
   </div>
 
   <script>
-    const API_BASE = 'https://ks1-alkebulan-pay-backend.onrender.com';
-    const token = localStorage.getItem('ks1_admin_token');
+    const token = localStorage.getItem('ks1_jwt_token');
+    if (!token) {
+      alert('Please log in first.');
+      window.location.href = 'https://ks1-alkebulan-pay-identity-hub.pages.dev';
+    }
 
-    if (!token) window.location.href = 'index.html';
-
-    let logoutTimer;
-    const resetTimer = () => {
-      clearTimeout(logoutTimer);
-      logoutTimer = setTimeout(() => {
-        alert('Session expired due to inactivity.');
-        logout();
-      }, 45000);
-    };
-    document.addEventListener('click', resetTimer);
-    resetTimer();
-
-    async function loadDashboard() {
+    async function loadAdminProfile() {
       try {
-        const res = await fetch(`${API_BASE}/admin/users`, {
-          headers: { 'Authorization': `Bearer ${token}` }
+        const res = await fetch('https://ks1-central-auth.onrender.com/auth/verify', {
+          headers: { Authorization: `Bearer ${token}` }
         });
-        if (!res.ok) throw new Error('Access denied. Ensure user has "isAdmin: true" in MongoDB.');
-        const users = await res.json();
+        if (!res.ok) throw new Error('Invalid session');
+        const user = await res.json();
         
-        document.getElementById('totalBusinesses').textContent = users.length;
-        const eligible = users.filter(u => u.eligibilityStatus?.eligible).length;
-        document.getElementById('eligibleCount').textContent = eligible;
-        const avgRep = users.length ? (users.reduce((sum, u) => sum + u.reputationScore, 0) / users.length).toFixed(1) : 0;
-        document.getElementById('avgReputation').textContent = avgRep;
+        if (user.role !== 'admin') {
+          alert('Admin access required.');
+          window.location.href = 'https://ks1-alkebulan-pay-identity-hub.pages.dev';
+        }
 
-        const tbody = document.getElementById('usersBody');
-        tbody.innerHTML = users.map(u => `
-          <tr>
-            <td><strong>${u.tradeId}</strong></td>
-            <td>${u.businessOwner}</td>
-            <td>${u.phoneNumber || u.walletAddress || '—'}</td>
-            <td>${u.businessType}</td>
-            <td>${u.reputationScore}</td>
-            <td>${u.eligibilityStatus?.eligible ? '✅ Eligible' : '❌ Not Eligible'}</td>
-          </tr>
-        `).join('');
+        document.getElementById('admin-info').innerHTML = `
+          <p><strong>Admin ID:</strong> ${user.user_id}</p>
+          <p><strong>Role:</strong> ${user.role}</p>
+          <p>Status: ✅ Authorized</p>
+        `;
       } catch (err) {
-        alert('⚠️ ' + err.message);
+        alert('Access denied: ' + err.message);
+        window.location.href = 'https://ks1-alkebulan-pay-identity-hub.pages.dev';
       }
     }
 
-    function toggleUsers() {
-      const section = document.getElementById('usersSection');
-      section.classList.toggle('hidden');
-      if (!section.classList.contains('hidden')) loadDashboard();
-    }
-
-    function refreshData() {
-      if (!document.getElementById('usersSection').classList.contains('hidden')) loadDashboard();
-    }
-
     function logout() {
-      localStorage.removeItem('ks1_admin_token');
-      window.location.href = 'index.html';
+      localStorage.removeItem('ks1_jwt_token');
+      window.location.href = 'https://ks1-alkebulan-pay-identity-hub.pages.dev';
     }
+
+    // Placeholder functions — connect to your backend APIs later
+    function viewUsers() { alert('User management coming soon'); }
+    function viewTrades() { alert('Trade monitoring coming soon'); }
+    function viewAnalytics() { alert('Analytics coming soon'); }
+
+    loadAdminProfile();
   </script>
 </body>
 </html>
