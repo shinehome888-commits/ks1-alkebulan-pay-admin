@@ -1,52 +1,74 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>KS1 ALKEBULAN PAY – Admin Login</title>
+  <title>KS1 ALKEBULAN PAY – Admin Dashboard</title>
   <style>
-    :root { --deep-blue: #002147; --gold: #D4AF37; }
-    * { margin:0; padding:0; box-sizing:border-box; font-family:Segoe UI, sans-serif; }
-    body { background: var(--deep-blue); color:white; padding:20px; min-height:100vh; display:flex; justify-content:center; align-items:center; }
-    .container { background:rgba(255,255,255,0.08); border-radius:16px; padding:32px; width:100%; max-width:400px; text-align:center; }
-    h1 { color: var(--gold); margin-bottom:24px; }
-    input { width:100%; padding:12px; margin:10px 0; border-radius:8px; border:1px solid #ddd; font-size:16px; }
-    .btn { background: var(--gold); color: var(--deep-blue); border:none; border-radius:8px; padding:14px; width:100%; font-weight:bold; font-size:16px; cursor:pointer; margin:16px 0; }
-    footer { margin-top:30px; font-size:12px; color:#bbb; }
+    body { background: #050A16; color: white; font-family: sans-serif; padding: 20px; }
+    .container { max-width: 800px; margin: 0 auto; }
+    .card { background: rgba(255,255,255,0.05); padding: 20px; border-radius: 10px; margin: 10px 0; }
+    .btn { background: #D4AF37; color: #000; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer; }
+    .logout { background: #ff4d4d; }
+    h1 { color: #D4AF37; margin-bottom: 20px; }
   </style>
 </head>
 <body>
   <div class="container">
-    <h1>KS1 ALKEBULAN PAY</h1>
-    <p>Admin Access • KS1EGF</p>
-    <input type="text" id="tradeId" placeholder="Admin Trade ID" value="KS1-ADMN" readonly />
-    <input type="password" id="password" placeholder="Password" />
-    <button class="btn" onclick="login()">Login</button>
-    <footer>
-      <p>© 2026 KS1 ALKEBULAN PAY – A Nonprofit Project By KS1 Empire Group & Foundation (KS1EGF)</p>
-    </footer>
+    <h1>KS1 Admin Dashboard</h1>
+    <div id="admin-info" class="card">Loading...</div>
+    
+    <div class="card">
+      <h3>Admin Actions</h3>
+      <button class="btn" onclick="viewUsers()">View All Users</button>
+      <button class="btn" onclick="viewTrades()">Monitor Trades</button>
+      <button class="btn" onclick="viewAnalytics()">System Analytics</button>
+    </div>
+
+    <button class="btn logout" onclick="logout()">Logout</button>
   </div>
+
   <script>
-    const API_BASE = 'https://ks1-alkebulan-pay-backend.onrender.com';
-    async function login() {
-      const password = document.getElementById('password').value;
+    const token = localStorage.getItem('ks1_jwt_token');
+    if (!token) {
+      alert('Please log in first.');
+      window.location.href = 'https://ks1-alkebulan-pay-identity-hub.pages.dev';
+    }
+
+    async function loadAdminProfile() {
       try {
-        const res = await fetch(`${API_BASE}/admin/login`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ tradeId: 'KS1-ADMN', password })
+        const res = await fetch('https://ks1-central-auth.onrender.com/auth/verify', {
+          headers: { Authorization: `Bearer ${token}` }
         });
-        const result = await res.json();
-        if (res.ok && result.token) {
-          localStorage.setItem('ks1_admin_token', result.token);
-          window.location.href = 'dashboard.html';
-        } else {
-          alert(result.message || 'Login failed');
+        if (!res.ok) throw new Error('Invalid session');
+        const user = await res.json();
+        
+        if (user.role !== 'admin') {
+          alert('Admin access required.');
+          window.location.href = 'https://ks1-alkebulan-pay-identity-hub.pages.dev';
         }
+
+        document.getElementById('admin-info').innerHTML = `
+          <p><strong>Admin ID:</strong> ${user.user_id}</p>
+          <p><strong>Role:</strong> ${user.role}</p>
+          <p>Status: ✅ Authorized</p>
+        `;
       } catch (err) {
-        alert('Network error. Please try again.');
+        alert('Access denied: ' + err.message);
+        window.location.href = 'https://ks1-alkebulan-pay-identity-hub.pages.dev';
       }
     }
+
+    function logout() {
+      localStorage.removeItem('ks1_jwt_token');
+      window.location.href = 'https://ks1-alkebulan-pay-identity-hub.pages.dev';
+    }
+
+    // Placeholder functions — connect to your backend APIs later
+    function viewUsers() { alert('User management coming soon'); }
+    function viewTrades() { alert('Trade monitoring coming soon'); }
+    function viewAnalytics() { alert('Analytics coming soon'); }
+
+    loadAdminProfile();
   </script>
 </body>
 </html>
